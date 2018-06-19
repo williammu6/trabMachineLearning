@@ -1,9 +1,7 @@
 import pandas as pd
 import sys, pickle
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
 from sklearn.feature_extraction import FeatureHasher
-
-enc = OneHotEncoder()
 
 train = False if len(sys.argv) < 2 else True
 
@@ -12,12 +10,12 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 
 
-	# from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 from sklearn.neighbors import KNeighborsClassifier
-# from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import GaussianNB
 # from sklearn.linear_model import LogisticRegression
-# from sklearn.svm import SVC
+from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
 
@@ -32,7 +30,7 @@ def converte_categorias(df):
 	df['natureza_frete'] = df.natureza_frete.cat.codes
 	return df
 
-dataset = pd.read_csv("./dataset2.csv", delimiter=";")
+dataset = pd.read_csv("./dataset.csv", delimiter=";")
 
 trainset = dataset[:int(len(dataset)*0.7)]
 testset = dataset[int(len(dataset)*0.7):]
@@ -46,14 +44,13 @@ X_test = testset.loc[:, testset.columns != "y"]
 y_test = testset.loc[:, testset.columns == "y"]
 y_test = y_test.values.ravel()
 
-# X_train = converte_categorias(X_train)
-# X_test = converte_categorias(X_test)
-X_train = pd.get_dummies(X_train)
-print(X_train)
-enc.fit(X_train.as_matrix()).transform(X_train.as_matrix()).toarray()
-enc.transform(X_train).toarray()
+X_train = X_train.apply(LabelEncoder().fit_transform)
+X_test = X_test.apply(LabelEncoder().fit_transform)
 
 folds = 3
+
+gnb = GaussianNB()
+gnb_params = {}
 
 knn = KNeighborsClassifier()
 knn_params = {
@@ -75,8 +72,14 @@ rf_params = {
 	"max_features": ["auto","sqrt"]
 }
 
-classifiers = [knn]
-grids = [knn_params]
+svc = SVC()
+svc_params = {}
+
+dt = DecisionTreeClassifier()
+dt_params = {}
+
+classifiers = [svc]
+grids = [svc_params]
 
 grid_params = zip(classifiers, grids)
 
@@ -87,13 +90,12 @@ if train:
 		print("Buscando para algoritmo: {0}\n".format(classifier.__class__))
 		
 		
-		clf = GridSearchCV(estimator=classifier,  # algoritmo em teste
-								   param_grid=params,  # parâmetros de busca
-								   cv=folds,  # objeto que vai gerar as divisões
-								   n_jobs=-1, #processamento
-								   scoring='accuracy')  # score que será utilizado
-			
-		
+		clf = GridSearchCV(estimator=classifier,
+								   param_grid=params,
+								   cv=folds,
+								   n_jobs=-1, 
+								   scoring='accuracy') 
+					
 		clf.fit(X_train, y_train.ravel())
 
 		print("Melhor seleção de hyperparâmetros:\n")
@@ -115,8 +117,17 @@ else:
 	X_eval = evaluate.loc[:, evaluate.columns != "y"]
 	y_eval = evaluate.loc[:, evaluate.columns == "y"]
 	y_eval = y_eval.values.ravel()
-	# X_eval_cat = converte_categorias(X_eval)
-	X_eval = pd.get_dummies(X_eval)
-	y_true, y_pred = y_test, loaded_model.predict(X_eval)
+
+	X_eval = X_eval.apply(LabelEncoder().fit_transform)
+	# loaded_model.fit(X_eval, y_eval)
+	predictions = loaded_model.predict(X_eval)
+	y_true, y_pred = y_eval
+	# count = 0
 	print(classification_report(y_true, y_pred))
+	# for i in (predictions):
+	# 	print(y_eval[count] + " = " + i)
+	# 	count+=1
+
+
+
 
