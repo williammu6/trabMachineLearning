@@ -72,7 +72,7 @@ mlp_params = {
 	# "activation": ["logistic", "tanh", "relu"],
 	# "learning_rate": ['adaptive', 'constant', 'invscaling']
 	"activation": ["logistic"],
-	"hidden_layer_sizes": [100], # 2, 3, 
+	"hidden_layer_sizes": [10], # 2, 3, 
 }
 
 knn = KNeighborsClassifier()
