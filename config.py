@@ -65,7 +65,7 @@ def select_k_best_features(method, train_features, test_features, targets, k_bes
 
 folds = 3
 
-filename = 'goodmodel.sav'
+filename = './model/goodmodel.sav'
 
 mlp = MLPClassifier()
 mlp_params = {

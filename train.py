@@ -4,7 +4,7 @@ if len(sys.argv) < 2:
 	print("Usage: python3 train.py <train_file>")
 	exit()
 
-dataset = pd.read_csv(sys.argv[1], delimiter=";")
+dataset = pd.read_csv('./model/' + sys.argv[1], delimiter=";")
 dataset = dataset.sample(frac=1).reset_index(drop=True)
 dataset = dataset.drop(dataset[dataset.y == 'monofasico aliquotas diferenciadas'].index)
 

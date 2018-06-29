@@ -2,7 +2,7 @@ from config import *
 
 loaded_model = pickle.load(open(filename, 'rb'))
 
-evaluate = pd.read_csv(sys.argv[1], delimiter=";")
+evaluate = pd.read_csv('./data/' + sys.argv[1], delimiter=";")
 evaluate = evaluate.loc[:, evaluate.columns != 'cnpj']
 evaluate = evaluate.drop(evaluate[evaluate.y == 'monofasico aliquotas diferenciadas'].index)
 
