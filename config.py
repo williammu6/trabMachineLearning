@@ -1,65 +1,79 @@
 import pandas as pd
-import sys, pickle
+import sys, pickle, itertools
+import numpy as np
+import scikitplot as skplt
 from sklearn.preprocessing import *
-from sklearn.linear_model import SGDClassifier
+# from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
-from sklearn.tree import DecisionTreeClassifier
+# from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.svm import LinearSVC
+# from sklearn.naive_bayes import GaussianNB
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.svm import SVC
+# from sklearn.svm import LinearSVC
 from sklearn.neural_network import MLPClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVR
-from sklearn.cluster import KMeans
-from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.feature_extraction.text import CountVectorizer
+# from sklearn.feature_extraction.text import TfidfTransformer
+# from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neural_network import MLPClassifier
+from sklearn.feature_selection import f_classif
+from sklearn.feature_selection import SelectKBest
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
 
-count_vect = CountVectorizer()
+# count_vect = CountVectorizer()
+scaler = StandardScaler()
+
+def plot_confusion_matrix(cm, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+def select_k_best_features(method, train_features, test_features, targets, k_best=10):
+	selector = SelectKBest(method, k=k_best).fit(train_features, targets)
+	indices = np.where(selector.get_support() == True)
+	new_train_features = selector.transform(train_features)
+	new_test_features = selector.transform(test_features)
+	return new_train_features, new_test_features, indices
+
 
 folds = 3
-filename = 'model_1.sav'
+
+filename = 'goodmodel.sav'
 
 mlp = MLPClassifier()
 mlp_params = {
-	"activation": ["identity", "logistic", "tanh", "relu"]
+	# "activation": ["logistic", "tanh", "relu"],
+	# "learning_rate": ['adaptive', 'constant', 'invscaling']
+	"activation": ["logistic"],
+	"hidden_layer_sizes": [100], # 2, 3, 
 }
-
-kmeans = KMeans()
-kmeans_params = {
-	"n_clusters": [2, 5],
-	"random_state": [0],
-	"max_iter": [100, 200, 300]
-}
-
-scaler = StandardScaler()
-
-sd = SGDClassifier()
-sd_params = {
-	"loss": ["hinge"], 
-	"penalty": ["l2"],
-	"alpha": [1e-3], 
-	"random_state": [42],
-	"max_iter": [5], 
-	"tol": [None],
-	"loss": ["log"]
-}
-
-svr = SVR()
-svr_params = {
-	"kernel": ["rbf", "linear", "poly"],	
-	"C": [1e3],
-	"gamma": [0.1],
-	"degree": [2]
-}
-
-
-rl = LogisticRegression()
-rl_params = {}
 
 knn = KNeighborsClassifier()
 knn_params1 = {
@@ -73,36 +87,6 @@ knn_params2 = {
 	"p": [2]
 }
 
-pcptron = MLPClassifier()
-pcptron_params = {
-	"hidden_layer_sizes": [1,2],    
-	"max_iter": [50,100,200]    
-}
-
-rf = RandomForestClassifier()
-rf_params = {
-	"n_estimators": [5,10],
-	"criterion": ["entropy"],
-	"max_features": ["auto","sqrt"]
-}
-
-dt = DecisionTreeClassifier()
-dt_params = {}
 
 classifiers = [mlp]
 grids = [mlp_params]
-
-def converte_categorias(df):
-	pd.options.mode.chained_assignment = None  # default='warn'
-	
-	df.cnpj = pd.Categorical(df.cnpj)
-	df['cnpj'] = df.cnpj.cat.codes
-	
-	df.cfop = pd.Categorical(df.cfop)
-	df['cfop'] = df.cfop.cat.codes
-
-	df.ncm = pd.Categorical(df.ncm)
-	df['ncm'] = df.ncm.cat.codes
-	df.natureza_frete = pd.Categorical(df.natureza_frete)
-	df['natureza_frete'] = df.natureza_frete.cat.codes
-	return df

@@ -1,12 +1,14 @@
 from config import *
 
-grid_params = zip(classifiers, grids)
-
 if len(sys.argv) < 2:
 	print("Usage: python3 train.py <train_file>")
 	exit()
 
 dataset = pd.read_csv(sys.argv[1], delimiter=";")
+dataset = dataset.sample(frac=1).reset_index(drop=True)
+dataset = dataset.drop(dataset[dataset.y == 'monofasico aliquotas diferenciadas'].index)
+
+class_names = dataset.y.unique()
 
 trainset = dataset[:int(len(dataset)*0.7)]
 testset = dataset[int(len(dataset)*0.7):]
@@ -22,8 +24,18 @@ y_test = y_test.values.ravel()
 X_train = X_train.apply(LabelEncoder().fit_transform)
 X_test = X_test.apply(LabelEncoder().fit_transform)
 
-# X_train = tf_transformer.transform(X_train)
-# X_test = tf_transformer.transform(X_test)
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.fit_transform(X_test)
+
+#Função para testar combinações de features e seus resultados
+
+# for n in range(1,4):
+	# print("Feature: " + str(n))
+	# selected_feature, selected_test_features, best = select_k_best_features(f_classif, X_train, X_test, y_train, k_best=n)
+	# best_feature_names = X_train.columns[best]
+	# grid_params = zip(classifiers, grids)
+
+grid_params = zip(classifiers, grids)
 
 for _, (classifier, params) in enumerate(grid_params):
 
@@ -47,12 +59,17 @@ for _, (classifier, params) in enumerate(grid_params):
 		print("{:.3f} (+/-{:.3f}) for {}".format(mean, std * 2, params))
 	print("\nResultado detalhado para o melhor modelo:\n")
 	y_true, y_pred = y_test, clf.predict(X_test)
+	# skplt.metrics.plot_confusion_matrix(y_true, y_pred, normalize=True)
 	print(classification_report(y_true, y_pred))
-
+	# print(best_feature_names)
 	# for doc, real, pred in zip(	, y_true, y_pred):
 	# 	print("%s => %s => %s" % (doc,  real, pred))
 
-	# pickle.dump(clf, open(filename, 'wb'))
+	plt.figure()
+	matrix = confusion_matrix(y_true, y_pred)
+	pickle.dump(clf, open(filename, 'wb'))
 
+# skplt.metrics.plot_precision_recall_curve(X_test, probas)
 
-
+plot_confusion_matrix(matrix, classes=class_names, normalize=True, title='Normalized confusion matrix')
+plt.show()
